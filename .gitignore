@@ -1,0 +1,26 @@
+# dependencies and build output
+frontend/node_modules/
+frontend/dist/
+
+# local binaries
+backend/main
+backend/server
+backend/seed
+*.test
+*.out
+
+# local config with credentials
+.env
+backend/settings/settings.yaml
+
+# production deployment: secrets, build output, certificates, backups
+deployment/prod/.env
+deployment/prod/backend/settings.prod.yaml
+deployment/prod/backend/server
+deployment/prod/backend/seed
+deployment/prod/web/
+deployment/prod/certbot/
+deployment/prod/backups/
+
+# screenshots (domain registrar pages contain personal information)
+Screenshot*.png

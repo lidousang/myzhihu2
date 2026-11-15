@@ -1,0 +1,2 @@
+# Keep local broker credentials out of version control.
+.env

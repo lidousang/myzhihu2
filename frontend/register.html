@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <title>注册 - 知乎风格 Demo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --blue: #056de8;
+      --blue-hover: #0451ad;
+      --text: #121212;
+      --muted: #8590a6;
+      --page: #f6f6f6;
+      --line: #e7e7e7;
+      --card-shadow: 0 1px 3px rgba(18, 18, 18, 0.1);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: var(--page);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.6;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      height: 52px;
+      background: #fff;
+      box-shadow: var(--card-shadow);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: min(100%, 1000px);
+      height: 100%;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    .header-left, .header-right, .nav-links {
+      display: flex;
+      align-items: center;
+    }
+
+    .header-left { gap: 24px; }
+
+    .logo {
+      color: var(--blue);
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -1px;
+    }
+
+    .nav-links {
+      gap: 20px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .nav-links a:hover, .nav-links a.active { color: var(--text); }
+
+    .header-right { gap: 16px; }
+
+    .header-link {
+      color: var(--blue);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .header-link:hover { color: var(--blue-hover); }
+
+    main {
+      display: grid;
+      place-items: start center;
+      min-height: calc(100vh - 52px);
+      padding: 48px 16px 64px;
+    }
+
+    .register-card {
+      width: min(100%, 440px);
+      padding: 32px;
+      border-radius: 4px;
+      background: #fff;
+      box-shadow: var(--card-shadow);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.4;
+    }
+
+    .intro {
+      margin: 8px 0 24px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .field { margin-bottom: 17px; }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .optional {
+      margin-left: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 400;
+    }
+
+    input {
+      display: block;
+      width: 100%;
+      height: 42px;
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      outline: none;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+      font-size: 14px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input::placeholder { color: #aeb6c2; }
+
+    input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(5, 109, 232, 0.1);
+    }
+
+    .field-hint {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .submit-button {
+      width: 100%;
+      min-height: 42px;
+      margin-top: 4px;
+      border: 0;
+      border-radius: 4px;
+      background: var(--blue);
+      color: #fff;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    .submit-button:hover { background: var(--blue-hover); }
+    .submit-button:disabled { cursor: wait; opacity: 0.65; }
+
+    .message {
+      display: none;
+      margin: 16px 0 0;
+      padding: 10px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .message.error {
+      display: block;
+      border: 1px solid #f3c7c7;
+      background: #fff5f5;
+      color: #b42318;
+    }
+
+    .message.success {
+      display: block;
+      border: 1px solid #b7dfc5;
+      background: #f2fbf5;
+      color: #237a43;
+    }
+
+    .card-footer {
+      margin-top: 22px;
+      padding-top: 17px;
+      border-top: 1px solid #f0f0f0;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .card-footer a { color: var(--blue); font-weight: 500; }
+    .card-footer a:hover { color: var(--blue-hover); }
+
+    .agreement {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 520px) {
+      .nav-links { display: none; }
+      main { padding: 24px 12px 40px; }
+      .register-card { padding: 25px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <a class="logo" href="gpt_test.html" aria-label="回到首页">知乎</a>
+        <ul class="nav-links" aria-label="主导航">
+          <li><a href="gpt_test.html">推荐</a></li>
+          <li><a href="gpt_test.html">关注</a></li>
+          <li><a href="gpt_test.html">热榜</a></li>
+        </ul>
+      </div>
+      <div class="header-right">
+        <a class="header-link" href="gpt_test.html">返回首页</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="register-card" aria-labelledby="register-title">
+      <p class="eyebrow">加入知乎风格 Demo</p>
+      <h1 id="register-title">创建你的账号</h1>
+      <p class="intro">注册后即可发布内容、参与讨论并获取个性化推荐。</p>
+
+      <form id="register-form" novalidate>
+        <div class="field">
+          <label for="username">用户名</label>
+          <input id="username" name="username" type="text" autocomplete="username"
+                 minlength="3" maxlength="64" required placeholder="3–64 个字符">
+        </div>
+
+        <div class="field">
+          <label for="display-name">显示名称<span class="optional">选填</span></label>
+          <input id="display-name" name="display_name" type="text" autocomplete="nickname"
+                 maxlength="64" placeholder="留空时使用用户名">
+        </div>
+
+        <div class="field">
+          <label for="password">密码</label>
+          <input id="password" name="password" type="password" autocomplete="new-password"
+                 minlength="8" maxlength="72" required placeholder="至少 8 个字符">
+          <p class="field-hint">密码长度为 8–72 个字符。</p>
+        </div>
+
+        <div class="field">
+          <label for="confirm-password">确认密码</label>
+          <input id="confirm-password" name="confirm_password" type="password"
+                 autocomplete="new-password" required placeholder="再次输入密码">
+        </div>
+
+        <button class="submit-button" id="submit-button" type="submit">注册</button>
+        <p class="message" id="form-message" role="status" aria-live="polite"></p>
+      </form>
+
+      <p class="agreement">注册即表示你同意遵守社区使用规范。</p>
+      <div class="card-footer">已有账号？目前可直接使用后端登录 API。</div>
+    </section>
+  </main>
+
+  <script>
+    const form = document.querySelector("#register-form");
+    const submitButton = document.querySelector("#submit-button");
+    const message = document.querySelector("#form-message");
+
+    function showMessage(text, type) {
+      message.textContent = text;
+      message.className = `message ${type}`;
+    }
+
+    async function readError(response) {
+      try {
+        const payload = await response.json();
+        return payload.error || payload.message || "注册失败，请检查输入后重试。";
+      } catch (_) {
+        return "注册失败，请稍后重试。";
+      }
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      message.className = "message";
+
+      if (!form.reportValidity()) return;
+
+      const username = form.elements.username.value.trim();
+      const password = form.elements.password.value;
+      const confirmPassword = form.elements.confirm_password.value;
+      const displayName = form.elements.display_name.value.trim();
+
+      // The backend hashes passwords with bcrypt, whose input limit is 72
+      // bytes. Count UTF-8 bytes so multi-byte characters follow the same rule.
+      const passwordBytes = new TextEncoder().encode(password).length;
+      if (passwordBytes < 8 || passwordBytes > 72) {
+        showMessage("密码需为 8–72 个 UTF-8 字节。", "error");
+        form.elements.password.focus();
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showMessage("两次输入的密码不一致。", "error");
+        form.elements.confirm_password.focus();
+        return;
+      }
+
+      submitButton.disabled = true;
+      submitButton.textContent = "正在创建账号…";
+
+      try {
+        // Nginx serves this page and proxies /api/ to the Go backend, so a
+        // relative URL keeps the browser request same-origin.
+        const response = await fetch("/api/v1/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username,
+            password,
+            ...(displayName ? { display_name: displayName } : {})
+          })
+        });
+
+        if (!response.ok) {
+          showMessage(await readError(response), "error");
+          return;
+        }
+
+        const payload = await response.json();
+        const auth = payload.data;
+        if (!auth || !auth.access_token) {
+          showMessage("账号已创建，但服务器没有返回登录令牌。", "error");
+          return;
+        }
+
+        localStorage.setItem("access_token", auth.access_token);
+        localStorage.setItem("current_user", JSON.stringify(auth.user));
+        showMessage("注册成功，正在返回首页…", "success");
+        window.setTimeout(() => { window.location.href = "gpt_test.html"; }, 700);
+      } catch (_) {
+        showMessage("无法连接服务器，请确认后端和 Nginx 已启动。", "error");
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "注册";
+      }
+    });
+  </script>
+</body>
+</html>

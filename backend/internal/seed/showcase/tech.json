@@ -1,0 +1,93 @@
+{
+  "topic": "tech",
+  "items": [
+    {"author": "bigv_tech", "kind": "article", "hot": true, "title": "写扩散还是读扩散？聊聊 Feed 流里的大 V 问题",
+     "body": "关注流有两种做法：发帖时把内容推进每个粉丝的收件箱（写扩散），或者刷新时去每个关注对象那里拉取（读扩散）。写扩散读得快，但一个有几万粉丝的作者发一条帖子，就要写几万次。常见的折中是推拉结合：普通作者照常推送，粉丝数超过阈值的作者只写自己的发件箱，读者刷新时再把这些发件箱和自己的收件箱按时间归并。代价是读取时多几次查询，换来写入成本的数量级下降。阈值怎么定，最好用压测数据说话。"},
+    {"author": "bigv_tech", "kind": "article", "title": "为什么 Feed 收件箱用 Redis ZSET 而不是 List",
+     "body": "收件箱需要三个能力：按时间倒序、不重复、从任意位置往后翻页。ZSET 用分数排序，成员天然唯一，ZREVRANGEBYSCORE 配合开区间“(游标”就能实现游标分页，复杂度是 O(log N + M)。List 做不到去重，按值删除要遍历，按“某条之后”翻页还得先找到位置。一个细节：分数是 float64，自增 ID 没问题，64 位雪花 ID 会丢精度。"},
+    {"author": "bigv_tech", "kind": "question", "title": "消息队列的“至少一次”和“恰好一次”到底差在哪？",
+     "body": "看文档说 RabbitMQ 默认能做到至少一次投递，那业务上怎么保证不重复处理？恰好一次是不是只是营销说法？",
+     "answers": [
+       {"author": "mid_tech_3", "body": "分布式环境下真正的恰好一次很难做到，工程上通常是“至少一次投递 + 消费端幂等”，效果等价于恰好一次。幂等的做法有两类：操作本身天然幂等，比如 ZADD 同一个成员；或者用事件 ID 去重，先判重再执行，并且这两步要原子化。"},
+       {"author": "mid_tech_5", "body": "补充一点：生产端也要配合。业务数据和待发消息写在同一个本地事务里（Outbox 模式），再由后台任务投递，才能保证“业务成功则消息一定发出”。"}
+     ]},
+    {"author": "bigv_tech", "kind": "article", "title": "缓存穿透、击穿、雪崩，一次讲清楚",
+     "body": "穿透是查询根本不存在的数据，缓存永远不命中，每次都打到数据库，解决办法是缓存空值或者用一个标记表示“已构建但为空”。击穿是某个热点 key 过期的瞬间大量请求同时回源，可以用 singleflight 或分布式锁合并重建，或者干脆不设过期、由事件维护。雪崩是大量 key 同时过期或缓存整体不可用，前者靠过期时间加随机抖动，后者靠熔断加限流保护数据库。"},
+    {"author": "bigv_tech", "kind": "article", "title": "Go 的 GMP 调度模型，一张图讲清楚",
+     "body": "G 是 goroutine，M 是操作系统线程，P 是调度器上下文，持有本地运行队列。M 必须绑定一个 P 才能运行 G。本地队列空了会去全局队列取，再不行就从别的 P 偷一半，这叫 work stealing。G 发生系统调用阻塞时，M 会和 P 解绑，P 交给其他 M 继续调度，所以少量线程就能承载大量 goroutine。GOMAXPROCS 决定的是 P 的数量。"},
+    {"author": "bigv_tech", "kind": "question", "title": "Kubernetes 的 readiness 和 liveness 探针应该怎么配？",
+     "body": "两个探针都配成同一个 /health 接口可以吗？有什么坑？",
+     "answers": [
+       {"author": "mid_tech_1", "body": "最好分开。liveness 失败会重启容器，只应该检测进程是否卡死；readiness 失败只是把 Pod 从 Service 摘掉，适合检测依赖是否可用。如果把数据库连通性放进 liveness，数据库一抖动，所有 Pod 会被一起重启，问题反而扩大。"},
+       {"author": "ordinary", "body": "还要注意 initialDelaySeconds，启动慢的服务探针太早开始会被误杀，现在更推荐用 startupProbe 处理启动阶段。"}
+     ]},
+    {"author": "bigv_tech", "kind": "article", "title": "一次线上慢查询排查：从 EXPLAIN 到索引优化",
+     "body": "压测时 Feed 接口从 1000 QPS 掉到 10 QPS。EXPLAIN ANALYZE 显示罪魁祸首是一条 ORDER BY RAND() LIMIT 61：它要扫描全部 20 万行再排序，单次 853 毫秒。修复思路不是加索引，而是换算法：定时把近期内容 ID 放进候选池，读取时在应用层随机抽样。排查慢查询的顺序是：先压测找到慢接口，再用 EXPLAIN 看扫描行数和排序，最后用数据验证修复效果。"},
+    {"author": "bigv_tech", "kind": "article", "title": "Outbox 模式：让“写数据库”和“发消息”不再各说各话",
+     "body": "先写数据库再发消息，进程在中间崩溃，消息就丢了；先发消息再写数据库，又可能消息发出去了数据却回滚了。Outbox 的做法是把待发消息当作一行数据，和业务数据写在同一个事务里，再由后台任务轮询投递，broker 确认后标记已发送。它保证的是至少一次投递，所以消费端必须幂等。代价是有轮询延迟，可以在事务提交后主动唤醒投递任务来缩短。"},
+    {"author": "bigv_tech", "kind": "question", "title": "Docker 和虚拟机的隔离有什么本质区别？",
+     "body": "都说容器轻量，那它的隔离性比虚拟机差在哪里？跑不可信代码安全吗？",
+     "answers": [
+       {"author": "mid_tech_2", "body": "容器靠 Linux 的 namespace 做视图隔离、cgroup 做资源限制，所有容器共享宿主机内核；虚拟机有独立内核，靠 hypervisor 隔离。共享内核意味着内核漏洞可能导致逃逸。跑不可信代码时，至少要去掉 capabilities、只读根文件系统、禁网，更强的隔离可以用 gVisor 或 Kata Containers。"},
+       {"author": "mid_tech_4", "body": "可以理解为：虚拟机隔离的是“机器”，容器隔离的是“进程”。启动快、占用少的代价就是边界更薄。"}
+     ]},
+    {"author": "bigv_tech", "kind": "article", "title": "从 0 到 1 搭一条 CI/CD 流水线",
+     "body": "最小可用的流水线分三步：测试、构建、部署。推送代码后先跑 go vet 和带 -race 的单元测试；通过后用多阶段 Dockerfile 构建镜像，以 commit sha 作为 tag 推到镜像仓库；最后通知服务器拉取新镜像滚动更新。用 sha 而不是 latest 作为 tag，回滚时只要把版本号改回上一个就行。数据库迁移要单独作为一次性任务，在更新服务之前执行。"},
+    {"author": "bigv_tech", "kind": "question", "title": "大模型应用里的 RAG，为什么还需要重排序？",
+     "body": "向量检索已经按相似度排好了，为什么很多方案还要再加一个 rerank 模型？",
+     "answers": [
+       {"author": "mid_tech_6", "body": "向量召回追求快和全，用的是双塔结构，查询和文档分别编码，精度有限。重排序模型把查询和候选文档放在一起做交叉编码，更准但更慢，所以只对召回的前几十条做。典型流程是：BM25 加向量混合召回，再重排，取前几条进上下文。"},
+       {"author": "ordinary", "body": "另外重排序能缓解“相似但不相关”的问题，比如问题里有否定词时，纯向量检索经常排错。"}
+     ]},
+    {"author": "bigv_tech", "kind": "article", "title": "Redis 事务不能回滚，那 MULTI 到底保证了什么",
+     "body": "MULTI/EXEC 保证的是隔离：EXEC 时队列里的命令连续执行，中间不会插入其他客户端的命令。它不保证原子提交，某条命令运行时出错，其余命令照样执行。所以“先检查再修改”这类逻辑，用 MULTI 也解决不了，因为第二步要依赖第一步的结果。标准做法是 Lua 脚本：整段脚本在 Redis 内部作为一条命令执行。"},
+    {"author": "bigv_tech", "kind": "article", "title": "限流算法对比：固定窗口、滑动窗口、令牌桶",
+     "body": "固定窗口实现最简单，但在窗口边界会出现两倍突发。滑动窗口记录每次请求的时间戳，统计最近一段时间的请求数，边界平滑但更占内存。令牌桶按固定速率往桶里放令牌，请求拿到令牌才放行，既限制平均速率又允许一定突发，是网关里最常用的方案。Nginx 的 limit_req 基于漏桶，Go 里可以用 golang.org/x/time/rate。"},
+    {"author": "bigv_tech", "kind": "question", "title": "数据库连接池 max_open_conns 设多大合适？",
+     "body": "是不是越大越好？我的服务压测时设成 500 反而更慢了。",
+     "answers": [
+       {"author": "mid_tech_3", "body": "不是越大越好。数据库能并行处理的查询受 CPU 核数和磁盘限制，连接太多只会增加上下文切换和锁竞争。一个常见的起点是“数据库核数乘 2 再加磁盘数”，然后用压测找拐点。还要保证所有应用实例的连接总数不超过数据库的 max_connections。"},
+       {"author": "mid_tech_1", "body": "同时记得设置 conn_max_lifetime，避免连接被中间设备或数据库单方面断开后还留在池子里。"}
+     ]},
+    {"author": "bigv_tech", "kind": "article", "title": "熔断器的三种状态",
+     "body": "关闭状态下请求正常通过，同时统计失败率；失败率超过阈值就切到打开状态，直接返回错误或走降级逻辑，不再访问故障依赖；打开一段时间后进入半开状态，放行少量探测请求，成功就关闭，失败就重新打开。熔断解决的是“依赖已经不行了还在一直等”的问题，常和超时、限流、降级一起使用。"},
+    {"author": "bigv_tech", "kind": "article", "title": "游标分页为什么比 OFFSET 快",
+     "body": "OFFSET 10000 LIMIT 20 需要数据库先找出前 10020 行再丢掉 10000 行，页数越深越慢；如果翻页过程中有新数据插入，还会出现重复或遗漏。游标分页记住上一页最后一条的 ID，下一页查询 id < 游标，只要 ID 上有索引，每一页的代价都一样。缺点是不能直接跳到第 N 页，但信息流本来就只需要“下一页”。"},
+    {"author": "mid_tech_1", "kind": "article", "title": "Prometheus 指标该怎么起名",
+     "body": "推荐的格式是“命名空间_子系统_名称_单位”，比如 http_request_duration_seconds。计数器以 _total 结尾，单位用基本单位：秒而不是毫秒，字节而不是 KB。标签要克制，不要把用户 ID、请求 ID 这类高基数值放进标签，否则时间序列数量会爆炸。延迟类指标用 Histogram，方便在服务端计算分位数。"},
+    {"author": "mid_tech_1", "kind": "question", "title": "Go 的 context 应该怎么传？",
+     "body": "看到有人把 context 存在结构体里，也有人每个函数第一个参数都传，哪种是对的？",
+     "answers": [
+       {"author": "mid_tech_2", "body": "官方建议是作为函数第一个参数显式传递，不要存进结构体，因为 context 代表的是一次请求的生命周期，而结构体通常活得更久。只有在少数“结构体本身就代表一次请求”的场景下才例外。"},
+       {"author": "ordinary", "body": "另外不要用 context 传业务参数，WithValue 只适合放 trace ID 这类贯穿整条链路的元数据。"}
+     ]},
+    {"author": "mid_tech_2", "kind": "article", "title": "多阶段构建：把 Go 镜像从 300MB 缩到 20MB",
+     "body": "第一阶段用带完整工具链的 golang 镜像编译，第二阶段只把编译好的二进制拷到 distroless 或 scratch 这类极简镜像里。加上 CGO_ENABLED=0 和 -ldflags=\"-s -w\" 可以得到静态链接、去掉调试信息的二进制。把 go mod download 单独放一层，依赖不变时能命中构建缓存。注意 distroless 里没有 shell，排查问题时要换一种思路。"},
+    {"author": "mid_tech_2", "kind": "article", "title": "singleflight：合并并发的重复请求",
+     "body": "golang.org/x/sync/singleflight 的作用是：同一个 key 同时有很多请求进来时，只让第一个真正执行，其余的等待并共享结果。它特别适合缓存重建，能把“缓存失效瞬间 200 个请求同时查数据库”变成只查一次。要注意它只在单个进程内生效，多副本部署时还需要分布式锁。"},
+    {"author": "mid_tech_3", "kind": "article", "title": "MySQL 索引最左前缀原则的几个误区",
+     "body": "联合索引 (a, b, c) 能用于 where a=? and b=?，也能用于 where b=? and a=?，因为优化器会调整顺序。但 where b=? 单独使用时用不上这个索引。范围查询之后的列也用不上：where a=? and b>? and c=? 中，c 只能在索引里做过滤，不能用来定位。另外，ORDER BY 能否利用索引，要看排序列是否和索引顺序一致。"},
+    {"author": "mid_tech_3", "kind": "question", "title": "RabbitMQ 消费者 prefetch 设多少合适？",
+     "body": "默认不设的话会有什么问题？",
+     "answers": [
+       {"author": "mid_tech_5", "body": "不设的话 broker 会把队列里的消息尽量全推给消费者，消费者内存可能撑爆，多个消费者之间也会分配不均。prefetch 限制的是“已推送但未确认”的消息数，处理慢的任务设小一点，处理快的可以设到几十到几百。"},
+       {"author": "ordinary", "body": "还要配合手动 ack，autoAck 模式下 prefetch 没有意义。"}
+     ]},
+    {"author": "mid_tech_4", "kind": "article", "title": "JWT 的三个常见误用",
+     "body": "第一，把敏感信息放进载荷：JWT 只是签名不是加密，任何人都能解码看到内容。第二，没有校验算法：解析时必须限定允许的算法，否则可能被 none 算法或算法混淆攻击绕过。第三，签发了很长的有效期却没有吊销手段。比较稳妥的做法是短期访问令牌加刷新令牌，密钥从环境变量读取，绝不提交进代码仓库。"},
+    {"author": "mid_tech_4", "kind": "article", "title": "优雅退出：滚动更新时为什么会丢请求",
+     "body": "Pod 被删除时，K8s 会同时做两件事：发送 SIGTERM 给容器，以及把 Pod 从 Service 的端点中摘除。后者是异步的，可能比前者慢。如果程序收到信号立刻退出，摘除之前路由过来的请求就会失败。解决办法是收到 SIGTERM 后先等几秒，再调用 http.Server 的 Shutdown 处理完在途请求，并且在 preStop 钩子里加一段等待。"},
+    {"author": "mid_tech_5", "kind": "article", "title": "分布式锁的正确姿势",
+     "body": "用 Redis 实现时，加锁必须一条命令完成：SET key token NX PX 毫秒数，NX 保证互斥，PX 防止持锁进程崩溃后锁永不释放。释放时要先比较 token 再删除，并且用 Lua 保证这两步原子，否则可能误删别人的锁。如果业务执行时间可能超过锁的有效期，还需要续期机制。"},
+    {"author": "mid_tech_5", "kind": "question", "title": "接口幂等有哪些实现方式？",
+     "body": "用户重复点击提交按钮，怎么保证只创建一条记录？",
+     "answers": [
+       {"author": "mid_tech_6", "body": "常见三种：数据库唯一索引兜底，冲突时返回已有结果；客户端生成幂等键随请求发送，服务端记录已处理的键；状态机约束，只允许从特定状态转移。点赞这类场景用复合主键加 ON CONFLICT DO NOTHING 最简单。"},
+       {"author": "ordinary", "body": "前端也可以防重复点击，但只能改善体验，真正的保证一定要在服务端。"}
+     ]},
+    {"author": "mid_tech_6", "kind": "article", "title": "BM25 是怎么给文档打分的",
+     "body": "BM25 由三部分组成：词频，一个词在文档里出现越多越相关，但增长会饱和；逆文档频率，越少见的词越有区分度；文档长度归一化，长文档天然包含更多词，需要惩罚。和向量检索相比，它对专有名词、型号、代码标识符这类需要精确匹配的内容表现很好，而且结果可以解释。"},
+    {"author": "mid_tech_6", "kind": "article", "title": "Agent 工具调用的边界怎么设计",
+     "body": "模型可以决定“调用哪个工具”，但不应该决定“能做什么”。比较稳妥的做法是：工具默认只读；有副作用的操作放在工作流外部，执行前需要人工确认；工具返回的内容一律当作不可信数据，防止提示词注入；最终结果通过专门的提交工具输出，并在代码里校验，比如只接受真实读取过的引用。"}
+  ]
+}

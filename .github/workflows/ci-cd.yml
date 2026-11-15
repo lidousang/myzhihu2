@@ -1,0 +1,123 @@
+name: ci-cd
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test -race -count=1 ./...
+
+      - name: Build linux binaries
+        env:
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          mkdir -p ../dist
+          go build -trimpath -ldflags="-s -w" -o ../dist/server ./cmd
+          go build -trimpath -ldflags="-s -w" -o ../dist/seed ./cmd/seed
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-bin
+          path: dist/
+          retention-days: 7
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: frontend/dist/
+          retention-days: 7
+
+  deploy:
+    needs: [backend, frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER || 'root' }}
+      SSHPASS: ${{ secrets.DEPLOY_PASSWORD }}
+      APP_DIR: /root/myzhihu2
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: backend-bin
+          path: incoming/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: incoming/html/
+
+      - name: Prepare SSH
+        env:
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq sshpass
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          cp deployment/scripts/remote-deploy.sh incoming/
+
+      - name: Upload release
+        run: |
+          SSH="sshpass -e ssh -p ${DEPLOY_PORT} -o StrictHostKeyChecking=yes -o PubkeyAuthentication=no -o PreferredAuthentications=password"
+          rsync -az --delete -e "$SSH" incoming/ "${DEPLOY_USER}@${DEPLOY_HOST}:${APP_DIR}/.incoming/"
+
+      - name: Switch to new release
+        run: |
+          sshpass -e ssh -p "${DEPLOY_PORT}" \
+            -o StrictHostKeyChecking=yes -o PubkeyAuthentication=no -o PreferredAuthentications=password \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "APP=${APP_DIR} bash ${APP_DIR}/.incoming/remote-deploy.sh ${GITHUB_SHA::7}"

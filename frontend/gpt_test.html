@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>仿知乎博客主页 - 博客平台</title>
+  <style>
+    /* ================= 全局基础样式 ================= */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background-color: #f6f6f6;
+      color: #121212;
+      line-height: 1.6;
+    }
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* ================= 1. 顶部导航栏 (Navbar) ================= */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background-color: #ffffff;
+      box-shadow: 0 1px 3px rgba(18, 18, 18, 0.1);
+      height: 52px;
+    }
+    .header-inner {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 100%;
+      padding: 0 16px;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .logo {
+      font-size: 26px;
+      font-weight: bold;
+      color: #056de8;
+      letter-spacing: -1px;
+    }
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 15px;
+      color: #8590a6;
+      font-weight: 500;
+      padding: 14px 0;
+    }
+    .nav-links a.active, .nav-links a:hover {
+      color: #121212;
+      font-weight: 600;
+      border-bottom: 3px solid #056de8;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .search-box {
+      background-color: #f6f6f6;
+      border: 1px solid #e7e7e7;
+      border-radius: 99px;
+      padding: 6px 16px;
+      display: flex;
+      align-items: center;
+      width: 240px;
+    }
+    .search-box input {
+      border: none;
+      background: transparent;
+      outline: none;
+      width: 100%;
+      font-size: 14px;
+    }
+    .btn-primary {
+      background-color: #056de8;
+      color: #ffffff;
+      border: none;
+      border-radius: 99px;
+      padding: 7px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .btn-primary:hover {
+      background-color: #0451ad;
+    }
+    .auth-link {
+      color: #056de8;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .auth-link:hover { color: #0451ad; }
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background-color: #056de8;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    /* ================= 2. 页面主布局 (Container) ================= */
+    .container {
+      max-width: 1000px;
+      margin: 10px auto 20px;
+      display: flex;
+      gap: 10px;
+      padding: 0 16px;
+    }
+
+    /* 左侧主体内容区 */
+    .main-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* 右侧侧边栏 */
+    .sidebar {
+      width: 296px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* 通用卡片容器 */
+    .card {
+      background-color: #ffffff;
+      border-radius: 2px;
+      box-shadow: 0 1px 3px rgba(18, 18, 18, 0.1);
+      padding: 16px 20px;
+      margin-bottom: 10px;
+    }
+
+    /* ================= 3. 快捷发布卡片 (Publisher) ================= */
+    .publisher-card {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .publisher-input {
+      background-color: #f6f6f6;
+      border: 1px solid #ebebeb;
+      border-radius: 4px;
+      padding: 10px 12px;
+      color: #8590a6;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .publisher-actions {
+      display: flex;
+      justify-content: space-around;
+      border-top: 1px solid #f0f0f0;
+      padding-top: 10px;
+    }
+    .action-item {
+      color: #8590a6;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .action-item:hover {
+      color: #121212;
+    }
+
+    /* ================= 4. 文章 Feed 卡片 (Post Item) ================= */
+    .post-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .post-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #121212;
+      line-height: 1.4;
+      cursor: pointer;
+    }
+    .post-title:hover {
+      color: #056de8;
+    }
+    .author-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .author-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background-color: #ccc;
+    }
+    .author-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #444;
+    }
+    .author-bio {
+      font-size: 13px;
+      color: #8590a6;
+    }
+    .post-body {
+      display: flex;
+      gap: 16px;
+      margin-top: 6px;
+    }
+    .post-cover {
+      width: 190px;
+      height: 105px;
+      object-fit: cover;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .post-excerpt {
+      font-size: 15px;
+      color: #444;
+      line-height: 1.6;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .post-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 8px;
+    }
+    .btn-vote {
+      background-color: rgba(5, 109, 232, 0.1);
+      color: #056de8;
+      border: none;
+      border-radius: 3px;
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-vote:hover {
+      background-color: rgba(5, 109, 232, 0.15);
+    }
+    .action-link {
+      font-size: 14px;
+      color: #8590a6;
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+    .action-link:hover {
+      color: #76839b;
+    }
+
+    /* ================= 5. 侧边栏样式 (Sidebar Components) ================= */
+    .sidebar-card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #121212;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      margin-bottom: 12px;
+    }
+    .hot-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .hot-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .hot-index {
+      font-size: 14px;
+      font-weight: bold;
+      color: #ff9607;
+      width: 16px;
+    }
+    .hot-index.top-1 { color: #ff4d4f; }
+    .hot-index.top-2 { color: #ff7a45; }
+    .hot-content {
+      font-size: 14px;
+      color: #121212;
+      line-height: 1.4;
+      flex: 1;
+    }
+    .hot-content:hover {
+      color: #056de8;
+    }
+    .hot-metrics {
+      font-size: 12px;
+      color: #8590a6;
+      margin-top: 2px;
+    }
+    .footer-links {
+      font-size: 13px;
+      color: #8590a6;
+      line-height: 1.8;
+    }
+
+    /* 响应式适配 */
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .search-box { width: 140px; }
+    }
+    @media (max-width: 600px) {
+      .nav-links { display: none; }
+      .header-left { gap: 8px; }
+      .header-right { gap: 10px; }
+      .search-box { width: clamp(88px, 27vw, 140px); padding-right: 10px; padding-left: 10px; }
+      .btn-primary { padding-right: 11px; padding-left: 11px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. 顶部导航栏 -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <a href="#" class="logo">知乎</a>
+        <ul class="nav-links">
+          <li><a href="#" class="active">推荐</a></li>
+          <li><a href="#">关注</a></li>
+          <li><a href="#">热榜</a></li>
+          <li><a href="#">圈子</a></li>
+        </ul>
+      </div>
+      <div class="header-right">
+        <div class="search-box">
+          <input type="text" placeholder="搜索你想了解的内容...">
+        </div>
+        <a class="auth-link" href="register.html">注册</a>
+        <button class="btn-primary">提问</button>
+        <div class="avatar">德</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 2. 主体容器 -->
+  <div class="container">
+
+    <!-- 2.1 左侧 Feed 信息流区 -->
+    <main class="main-content">
+
+      <!-- 快捷发布卡片 -->
+      <div class="card publisher-card">
+        <div class="publisher-input">分享此刻的想法...</div>
+        <div class="publisher-actions">
+          <span class="action-item">📝 写文章</span>
+          <span class="action-item">❓ 提问题</span>
+          <span class="action-item">💬 发回答</span>
+        </div>
+      </div>
+
+      <!-- 博客卡片 1 -->
+      <article class="card post-card">
+        <h2 class="post-title">如何从零开始设计一个基于 Go 和 Vue3 的高性能 Web 框架？</h2>
+        <div class="author-info">
+          <div class="author-avatar"></div>
+          <span class="author-name">赵德盾</span>
+          <span class="author-bio">后端架构师 / 系统编程爱好者</span>
+        </div>
+        <div class="post-body">
+          <p class="post-excerpt">
+            在构建高性能 Web 应用时，合理的架构设计与后端高并发能力至关重要。本文将结合 Go 语言的 Goroutine 调度模型与 Gin 框架中间件设计，深入剖析一个具备完整 JWT 认证、读写分离以及 AutoMigration 机制的 Web 基础组件的设计思路...
+          </p>
+        </div>
+        <div class="post-actions">
+          <button class="btn-vote">▲ 赞同 342</button>
+          <button class="action-link">💬 58 条评论</button>
+          <button class="action-link">⭐ 收藏</button>
+          <button class="action-link">↗ 分享</button>
+        </div>
+      </article>
+
+      <!-- 博客卡片 2 (带缩略图) -->
+      <article class="card post-card">
+        <h2 class="post-title">深入理解 Linux VFS 虚拟文件系统与自定义字符设备驱动实现</h2>
+        <div class="author-info">
+          <div class="author-avatar"></div>
+          <span class="author-name">系统底层探索者</span>
+          <span class="author-bio">专注 Linux 内核与 C/C++ 底层开发</span>
+        </div>
+        <div class="post-body">
+          <img src="https://via.placeholder.com/190x105" alt="文章缩略图" class="post-cover">
+          <p class="post-excerpt">
+            Linux 的“一切皆文件”理念建立在 VFS（Virtual File System）之上的。本文将通过 C 语言动手实现一个简单的 Linux 字符设备驱动程序，逐步讲解 dentry、inode 以及 file_operations 结构体之间的指针绑定与交互过程...
+          </p>
+        </div>
+        <div class="post-actions">
+          <button class="btn-vote">▲ 赞同 128</button>
+          <button class="action-link">💬 23 条评论</button>
+          <button class="action-link">⭐ 收藏</button>
+          <button class="action-link">↗ 分享</button>
+        </div>
+      </article>
+
+      <!-- 博客卡片 3 -->
+      <article class="card post-card">
+        <h2 class="post-title">大模型 Agent 架构实践： Model Context Protocol (MCP) 与 RAG 检索增强</h2>
+        <div class="author-info">
+          <div class="author-avatar"></div>
+          <span class="author-name">AI 架构研究员</span>
+          <span class="author-bio">探索 Transformer 与 Agentic 工作流</span>
+        </div>
+        <div class="post-body">
+          <p class="post-excerpt">
+            随着 LLM 从单一问答走向复杂任务的自主拆解，Agent 框架与外部工具的统一协议显得尤为重要。MCP 协议定义了一套标准的 JSON-RPC 交互规范，使得应用端能无缝连接各类上下文数据源...
+          </p>
+        </div>
+        <div class="post-actions">
+          <button class="btn-vote">▲ 赞同 512</button>
+          <button class="action-link">💬 94 条评论</button>
+          <button class="action-link">⭐ 收藏</button>
+          <button class="action-link">↗ 分享</button>
+        </div>
+      </article>
+
+    </main>
+
+    <!-- 2.2 右侧侧边栏区 -->
+    <aside class="sidebar">
+
+      <!-- 创作者中心卡片 -->
+      <div class="card">
+        <div class="sidebar-card-title">创作者中心</div>
+        <div style="font-size: 14px; color: #444; display: flex; justify-content: space-between;">
+          <span>创作等级：Lv.3</span>
+          <span style="color: #056de8; cursor: pointer;">草稿箱 (2)</span>
+        </div>
+      </div>
+
+      <!-- 热搜/推荐榜单 -->
+      <div class="card">
+        <div class="sidebar-card-title">大家都在搜</div>
+        <ul class="hot-list">
+          <li class="hot-item">
+            <span class="hot-index top-1">1</span>
+            <div>
+              <div class="hot-content">Go 1.24 新特性深度解析</div>
+              <div class="hot-metrics">582 万热度</div>
+            </div>
+          </li>
+          <li class="hot-item">
+            <span class="hot-index top-2">2</span>
+            <div>
+              <div class="hot-content">Direct Preference Optimization (DPO) 原理解析</div>
+              <div class="hot-metrics">412 万热度</div>
+            </div>
+          </li>
+          <li class="hot-item">
+            <span class="hot-index">3</span>
+            <div>
+              <div class="hot-content">Docker 与 WSL2 结合使用的最佳实践</div>
+              <div class="hot-metrics">320 万热度</div>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 页脚链接 -->
+      <div class="footer-links">
+        <p>博客 MVP 项目演示 · 基于 HTML/CSS</p>
+        <p>© 2026 知乎风格静态博客 Demo</p>
+      </div>
+
+    </aside>
+
+  </div>
+
+</body>
+</html>
